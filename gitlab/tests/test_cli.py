@@ -35,6 +35,9 @@ import gitlab.v4.cli
         ("class", "Class"),
         ("test-class", "TestClass"),
         ("test-longer-class", "TestLongerClass"),
+        ("current-user-gpg-key", "CurrentUserGPGKey"),
+        ("user-gpg-key", "UserGPGKey"),
+        ("ldap-group", "LDAPGroup"),
     ],
 )
 def test_what_to_cls(what, expected_class):
@@ -54,6 +57,9 @@ def test_what_to_cls(what, expected_class):
         ("TestClass", "test-class"),
         ("TestUPPERCASEClass", "test-uppercase-class"),
         ("UPPERCASETestClass", "uppercase-test-class"),
+        ("CurrentUserGPGKey", "current-user-gpg-key"),
+        ("UserGPGKey", "user-gpg-key"),
+        ("LDAPGroup", "ldap-group"),
     ],
 )
 def test_cls_to_what(class_name, expected_what):
