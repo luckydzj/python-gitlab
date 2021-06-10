@@ -29,8 +29,8 @@ from .commits import *
 from .container_registry import *
 from .custom_attributes import *
 from .deploy_keys import *
-from .deployments import *
 from .deploy_tokens import *
+from .deployments import *
 from .discussions import *
 from .environments import *
 from .epics import *
@@ -43,6 +43,7 @@ from .groups import *
 from .hooks import *
 from .issues import *
 from .jobs import *
+from .keys import *
 from .labels import *
 from .ldap import *
 from .members import *
@@ -54,6 +55,7 @@ from .notes import *
 from .notification_settings import *
 from .packages import *
 from .pages import *
+from .personal_access_tokens import *
 from .pipelines import *
 from .projects import *
 from .push_rules import *
@@ -71,8 +73,6 @@ from .triggers import *
 from .users import *
 from .variables import *
 from .wikis import *
-from .personal_access_tokens import *
-
 
 # TODO: deprecate these in favor of gitlab.const.*
 VISIBILITY_PRIVATE = "private"

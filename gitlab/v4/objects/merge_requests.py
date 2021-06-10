@@ -1,5 +1,6 @@
-from gitlab import cli, types
+from gitlab import cli
 from gitlab import exceptions as exc
+from gitlab import types
 from gitlab.base import RequiredOptional, RESTManager, RESTObject, RESTObjectList
 from gitlab.mixins import (
     CRUDMixin,
@@ -12,21 +13,21 @@ from gitlab.mixins import (
     TimeTrackingMixin,
     TodoMixin,
 )
-from .commits import ProjectCommit, ProjectCommitManager
-from .issues import ProjectIssue, ProjectIssueManager
-from .merge_request_approvals import (  # noqa: F401
-    ProjectMergeRequestApprovalManager,
-    ProjectMergeRequestApprovalRuleManager,
-)
+
 from .award_emojis import ProjectMergeRequestAwardEmojiManager  # noqa: F401
+from .commits import ProjectCommit, ProjectCommitManager
 from .discussions import ProjectMergeRequestDiscussionManager  # noqa: F401
-from .notes import ProjectMergeRequestNoteManager  # noqa: F401
 from .events import (  # noqa: F401
     ProjectMergeRequestResourceLabelEventManager,
     ProjectMergeRequestResourceMilestoneEventManager,
     ProjectMergeRequestResourceStateEventManager,
 )
-
+from .issues import ProjectIssue, ProjectIssueManager
+from .merge_request_approvals import (  # noqa: F401
+    ProjectMergeRequestApprovalManager,
+    ProjectMergeRequestApprovalRuleManager,
+)
+from .notes import ProjectMergeRequestNoteManager  # noqa: F401
 
 __all__ = [
     "MergeRequest",
@@ -35,6 +36,8 @@ __all__ = [
     "GroupMergeRequestManager",
     "ProjectMergeRequest",
     "ProjectMergeRequestManager",
+    "ProjectDeploymentMergeRequest",
+    "ProjectDeploymentMergeRequestManager",
     "ProjectMergeRequestDiff",
     "ProjectMergeRequestDiffManager",
 ]
@@ -47,7 +50,6 @@ class MergeRequest(RESTObject):
 class MergeRequestManager(ListMixin, RESTManager):
     _path = "/merge_requests"
     _obj_cls = MergeRequest
-    _from_parent_attrs = {"group_id": "id"}
     _list_filters = (
         "state",
         "order_by",
@@ -55,24 +57,35 @@ class MergeRequestManager(ListMixin, RESTManager):
         "milestone",
         "view",
         "labels",
+        "with_labels_details",
+        "with_merge_status_recheck",
         "created_after",
         "created_before",
         "updated_after",
         "updated_before",
         "scope",
         "author_id",
+        "author_username",
         "assignee_id",
         "approver_ids",
         "approved_by_ids",
+        "reviewer_id",
+        "reviewer_username",
         "my_reaction_emoji",
         "source_branch",
         "target_branch",
         "search",
+        "in",
         "wip",
+        "not",
+        "environment",
+        "deployed_before",
+        "deployed_after",
     )
     _types = {
         "approver_ids": types.ListAttribute,
         "approved_by_ids": types.ListAttribute,
+        "in": types.ListAttribute,
         "labels": types.ListAttribute,
     }
 
@@ -341,7 +354,7 @@ class ProjectMergeRequest(
         if merge_when_pipeline_succeeds:
             data["merge_when_pipeline_succeeds"] = True
 
-        server_data = self.manager.gitlab.http_put(path, query_data=data, **kwargs)
+        server_data = self.manager.gitlab.http_put(path, post_data=data, **kwargs)
         self._update_attrs(server_data)
 
 
@@ -406,6 +419,16 @@ class ProjectMergeRequestManager(CRUDMixin, RESTManager):
         "iids": types.ListAttribute,
         "labels": types.ListAttribute,
     }
+
+
+class ProjectDeploymentMergeRequest(MergeRequest):
+    pass
+
+
+class ProjectDeploymentMergeRequestManager(MergeRequestManager):
+    _path = "/projects/%(project_id)s/deployments/%(deployment_id)s/merge_requests"
+    _obj_cls = ProjectDeploymentMergeRequest
+    _from_parent_attrs = {"deployment_id": "id", "project_id": "project_id"}
 
 
 class ProjectMergeRequestDiff(RESTObject):

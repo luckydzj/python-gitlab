@@ -19,8 +19,10 @@ import importlib
 from types import ModuleType
 from typing import Any, Dict, Iterable, NamedTuple, Optional, Tuple, Type
 
-from .client import Gitlab, GitlabList
 from gitlab import types as g_types
+from gitlab.exceptions import GitlabParsingError
+
+from .client import Gitlab, GitlabList
 
 __all__ = [
     "RequiredOptional",
@@ -50,6 +52,12 @@ class RESTObject(object):
     manager: "RESTManager"
 
     def __init__(self, manager: "RESTManager", attrs: Dict[str, Any]) -> None:
+        if not isinstance(attrs, dict):
+            raise GitlabParsingError(
+                "Attempted to initialize RESTObject with a non-dictionary value: "
+                "{!r}\nThis likely indicates an incorrect or malformed server "
+                "response.".format(attrs)
+            )
         self.__dict__.update(
             {
                 "manager": manager,

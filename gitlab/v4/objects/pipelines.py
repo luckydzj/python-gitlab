@@ -2,9 +2,10 @@ from gitlab import cli
 from gitlab import exceptions as exc
 from gitlab.base import RequiredOptional, RESTManager, RESTObject
 from gitlab.mixins import (
-    CRUDMixin,
     CreateMixin,
+    CRUDMixin,
     DeleteMixin,
+    GetWithoutIdMixin,
     ListMixin,
     ObjectDeleteMixin,
     RefreshMixin,
@@ -12,7 +13,6 @@ from gitlab.mixins import (
     SaveMixin,
     UpdateMixin,
 )
-
 
 __all__ = [
     "ProjectPipeline",
@@ -27,6 +27,8 @@ __all__ = [
     "ProjectPipelineScheduleVariableManager",
     "ProjectPipelineSchedule",
     "ProjectPipelineScheduleManager",
+    "ProjectPipelineTestReport",
+    "ProjectPipelineTestReportManager",
 ]
 
 
@@ -35,6 +37,7 @@ class ProjectPipeline(RefreshMixin, ObjectDeleteMixin, RESTObject):
         ("jobs", "ProjectPipelineJobManager"),
         ("bridges", "ProjectPipelineBridgeManager"),
         ("variables", "ProjectPipelineVariableManager"),
+        ("test_report", "ProjectPipelineTestReportManager"),
     )
 
     @cli.register_custom_action("ProjectPipeline")
@@ -113,7 +116,7 @@ class ProjectPipelineJobManager(ListMixin, RESTManager):
     _path = "/projects/%(project_id)s/pipelines/%(pipeline_id)s/jobs"
     _obj_cls = ProjectPipelineJob
     _from_parent_attrs = {"project_id": "project_id", "pipeline_id": "id"}
-    _list_filters = ("scope",)
+    _list_filters = ("scope", "include_retried")
 
 
 class ProjectPipelineBridge(RESTObject):
@@ -202,3 +205,13 @@ class ProjectPipelineScheduleManager(CRUDMixin, RESTManager):
     _update_attrs = RequiredOptional(
         optional=("description", "ref", "cron", "cron_timezone", "active"),
     )
+
+
+class ProjectPipelineTestReport(RESTObject):
+    _id_attr = None
+
+
+class ProjectPipelineTestReportManager(GetWithoutIdMixin, RESTManager):
+    _path = "/projects/%(project_id)s/pipelines/%(pipeline_id)s/test_report"
+    _obj_cls = ProjectPipelineTestReport
+    _from_parent_attrs = {"project_id": "project_id", "pipeline_id": "id"}

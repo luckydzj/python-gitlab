@@ -167,6 +167,31 @@ List the subgroups for a group::
         real_group = gl.groups.get(subgroup_id, lazy=True)
         real_group.issues.list()
 
+Descendant Groups
+=================
+
+Reference
+---------
+
+* v4 API:
+
+  + :class:`gitlab.v4.objects.GroupDescendantGroup`
+  + :class:`gitlab.v4.objects.GroupDescendantGroupManager`
+  + :attr:`gitlab.v4.objects.Group.descendant_groups`
+
+Examples
+--------
+
+List the descendant groups of a group::
+
+    descendant_groups = group.descendant_groups.list()
+
+.. note::
+
+    Like the ``GroupSubgroup`` objects described above, ``GroupDescendantGroup``
+    objects do not expose the same API as the ``Group`` objects. Create a new
+    ``Group`` object instead if needed, as shown in the subgroup example.
+
 Group custom attributes
 =======================
 
@@ -225,26 +250,38 @@ Reference
 
   + :class:`gitlab.v4.objects.GroupMember`
   + :class:`gitlab.v4.objects.GroupMemberManager`
+  + :class:`gitlab.v4.objects.GroupMemberAllManager`
+  + :class:`gitlab.v4.objects.GroupBillableMember`
+  + :class:`gitlab.v4.objects.GroupBillableMemberManager`
   + :attr:`gitlab.v4.objects.Group.members`
+  + :attr:`gitlab.v4.objects.Group.members_all`
+  + :attr:`gitlab.v4.objects.Group.billable_members`
 
-* GitLab API: https://docs.gitlab.com/ce/api/groups.html
+* GitLab API: https://docs.gitlab.com/ce/api/members.html
 
+Billable group members are only available in GitLab EE.
 
 Examples
 --------
 
-List group members::
+List only direct group members::
 
     members = group.members.list()
 
 List the group members recursively (including inherited members through
 ancestor groups)::
 
-    members = group.members.all(all=True)
+    members = group.members_all.list(all=True)
+    # or
+    members = group.members.all(all=True) # Deprecated
 
-Get a group member::
+Get only direct group member::
 
     members = group.members.get(member_id)
+
+Get a member of a group, including members inherited through ancestor groups::
+
+    members = group.members_all.get(member_id)
 
 Add a member to the group::
 
@@ -261,6 +298,20 @@ Remove a member from the group::
     group.members.delete(member_id)
     # or
     member.delete()
+
+List billable members of a group (top-level groups only)::
+
+    billable_members = group.billable_members.list()
+
+Remove a billable member from the group::
+
+    group.billable_members.delete(member_id)
+    # or
+    billable_member.delete()
+
+List memberships of a billable member::
+
+    billable_member.memberships.list()
 
 LDAP group links
 ================

@@ -1,9 +1,10 @@
-from gitlab import cli, types, utils
+from gitlab import cli
 from gitlab import exceptions as exc
+from gitlab import types, utils
 from gitlab.base import RequiredOptional, RESTManager, RESTObject
 from gitlab.mixins import (
-    CRUDMixin,
     CreateMixin,
+    CRUDMixin,
     ListMixin,
     ObjectDeleteMixin,
     RefreshMixin,
@@ -11,8 +12,8 @@ from gitlab.mixins import (
     UpdateMixin,
 )
 
-from .project_access_tokens import ProjectAccessTokenManager  # noqa: F401
 from .access_requests import ProjectAccessRequestManager  # noqa: F401
+from .audit_events import ProjectAuditEventManager  # noqa: F401
 from .badges import ProjectBadgeManager  # noqa: F401
 from .boards import ProjectBoardManager  # noqa: F401
 from .branches import ProjectBranchManager, ProjectProtectedBranchManager  # noqa: F401
@@ -25,14 +26,13 @@ from .deploy_tokens import ProjectDeployTokenManager  # noqa: F401
 from .deployments import ProjectDeploymentManager  # noqa: F401
 from .environments import ProjectEnvironmentManager  # noqa: F401
 from .events import ProjectEventManager  # noqa: F401
-from .audit_events import ProjectAuditEventManager  # noqa: F401
 from .export_import import ProjectExportManager, ProjectImportManager  # noqa: F401
 from .files import ProjectFileManager  # noqa: F401
 from .hooks import ProjectHookManager  # noqa: F401
 from .issues import ProjectIssueManager  # noqa: F401
 from .jobs import ProjectJobManager  # noqa: F401
 from .labels import ProjectLabelManager  # noqa: F401
-from .members import ProjectMemberManager  # noqa: F401
+from .members import ProjectMemberAllManager, ProjectMemberManager  # noqa: F401
 from .merge_request_approvals import (  # noqa: F401
     ProjectApprovalManager,
     ProjectApprovalRuleManager,
@@ -41,13 +41,14 @@ from .merge_requests import ProjectMergeRequestManager  # noqa: F401
 from .milestones import ProjectMilestoneManager  # noqa: F401
 from .notes import ProjectNoteManager  # noqa: F401
 from .notification_settings import ProjectNotificationSettingsManager  # noqa: F401
-from .packages import ProjectPackageManager  # noqa: F401
+from .packages import GenericPackageManager, ProjectPackageManager  # noqa: F401
 from .pages import ProjectPagesDomainManager  # noqa: F401
 from .pipelines import (  # noqa: F401
     ProjectPipeline,
     ProjectPipelineManager,
     ProjectPipelineScheduleManager,
 )
+from .project_access_tokens import ProjectAccessTokenManager  # noqa: F401
 from .push_rules import ProjectPushRulesManager  # noqa: F401
 from .releases import ProjectReleaseManager  # noqa: F401
 from .repositories import RepositoryMixin
@@ -63,7 +64,6 @@ from .triggers import ProjectTriggerManager  # noqa: F401
 from .users import ProjectUserManager  # noqa: F401
 from .variables import ProjectVariableManager  # noqa: F401
 from .wikis import ProjectWikiManager  # noqa: F401
-
 
 __all__ = [
     "GroupProject",
@@ -124,12 +124,14 @@ class Project(RefreshMixin, SaveMixin, ObjectDeleteMixin, RepositoryMixin, RESTO
         ("exports", "ProjectExportManager"),
         ("files", "ProjectFileManager"),
         ("forks", "ProjectForkManager"),
+        ("generic_packages", "GenericPackageManager"),
         ("hooks", "ProjectHookManager"),
         ("keys", "ProjectKeyManager"),
         ("imports", "ProjectImportManager"),
         ("issues", "ProjectIssueManager"),
         ("labels", "ProjectLabelManager"),
         ("members", "ProjectMemberManager"),
+        ("members_all", "ProjectMemberAllManager"),
         ("mergerequests", "ProjectMergeRequestManager"),
         ("milestones", "ProjectMilestoneManager"),
         ("notes", "ProjectNoteManager"),
@@ -154,7 +156,8 @@ class Project(RefreshMixin, SaveMixin, ObjectDeleteMixin, RepositoryMixin, RESTO
         ("wikis", "ProjectWikiManager"),
         ("clusters", "ProjectClusterManager"),
         ("additionalstatistics", "ProjectAdditionalStatisticsManager"),
-        ("issuesstatistics", "ProjectIssuesStatisticsManager"),
+        ("issues_statistics", "ProjectIssuesStatisticsManager"),
+        ("issuesstatistics", "ProjectIssuesStatisticsManager"),  # Deprecated
         ("deploytokens", "ProjectDeployTokenManager"),
     )
 
@@ -561,119 +564,137 @@ class Project(RefreshMixin, SaveMixin, ObjectDeleteMixin, RepositoryMixin, RESTO
 class ProjectManager(CRUDMixin, RESTManager):
     _path = "/projects"
     _obj_cls = Project
+    # Please keep these _create_attrs in same order as they are at:
+    # https://docs.gitlab.com/ee/api/projects.html#create-project
     _create_attrs = RequiredOptional(
         optional=(
             "name",
             "path",
-            "namespace_id",
-            "default_branch",
-            "description",
-            "issues_enabled",
-            "merge_requests_enabled",
-            "jobs_enabled",
-            "wiki_enabled",
-            "snippets_enabled",
-            "issues_access_level",
-            "repository_access_level",
-            "merge_requests_access_level",
-            "forking_access_level",
-            "builds_access_level",
-            "wiki_access_level",
-            "snippets_access_level",
-            "pages_access_level",
-            "emails_disabled",
-            "resolve_outdated_diff_discussions",
-            "container_registry_enabled",
-            "container_expiration_policy_attributes",
-            "shared_runners_enabled",
-            "visibility",
-            "import_url",
-            "public_builds",
-            "only_allow_merge_if_pipeline_succeeds",
-            "only_allow_merge_if_all_discussions_are_resolved",
-            "merge_method",
+            "allow_merge_on_skipped_pipeline",
+            "analytics_access_level",
+            "approvals_before_merge",
+            "auto_cancel_pending_pipelines",
+            "auto_devops_deploy_strategy",
+            "auto_devops_enabled",
             "autoclose_referenced_issues",
-            "remove_source_branch_after_merge",
-            "lfs_enabled",
-            "request_access_enabled",
-            "tag_list",
             "avatar",
-            "printing_merge_request_link_enabled",
+            "build_coverage_regex",
             "build_git_strategy",
             "build_timeout",
-            "auto_cancel_pending_pipelines",
-            "build_coverage_regex",
+            "builds_access_level",
             "ci_config_path",
-            "auto_devops_enabled",
-            "auto_devops_deploy_strategy",
-            "repository_storage",
-            "approvals_before_merge",
+            "container_expiration_policy_attributes",
+            "container_registry_enabled",
+            "default_branch",
+            "description",
+            "emails_disabled",
             "external_authorization_classification_label",
-            "mirror",
-            "mirror_trigger_builds",
+            "forking_access_level",
+            "group_with_project_templates_id",
+            "import_url",
             "initialize_with_readme",
+            "issues_access_level",
+            "issues_enabled",
+            "jobs_enabled",
+            "lfs_enabled",
+            "merge_method",
+            "merge_requests_access_level",
+            "merge_requests_enabled",
+            "mirror_trigger_builds",
+            "mirror",
+            "namespace_id",
+            "operations_access_level",
+            "only_allow_merge_if_all_discussions_are_resolved",
+            "only_allow_merge_if_pipeline_succeeds",
+            "packages_enabled",
+            "pages_access_level",
+            "requirements_access_level",
+            "printing_merge_request_link_enabled",
+            "public_builds",
+            "remove_source_branch_after_merge",
+            "repository_access_level",
+            "repository_storage",
+            "request_access_enabled",
+            "resolve_outdated_diff_discussions",
+            "shared_runners_enabled",
+            "show_default_award_emojis",
+            "snippets_access_level",
+            "snippets_enabled",
+            "tag_list",
             "template_name",
             "template_project_id",
             "use_custom_template",
-            "group_with_project_templates_id",
-            "packages_enabled",
+            "visibility",
+            "wiki_access_level",
+            "wiki_enabled",
         ),
     )
+    # Please keep these _update_attrs in same order as they are at:
+    # https://docs.gitlab.com/ee/api/projects.html#edit-project
     _update_attrs = RequiredOptional(
         optional=(
-            "name",
-            "path",
-            "default_branch",
-            "description",
-            "issues_enabled",
-            "merge_requests_enabled",
-            "jobs_enabled",
-            "wiki_enabled",
-            "snippets_enabled",
-            "issues_access_level",
-            "repository_access_level",
-            "merge_requests_access_level",
-            "forking_access_level",
-            "builds_access_level",
-            "wiki_access_level",
-            "snippets_access_level",
-            "pages_access_level",
-            "emails_disabled",
-            "resolve_outdated_diff_discussions",
-            "container_registry_enabled",
-            "container_expiration_policy_attributes",
-            "shared_runners_enabled",
-            "visibility",
-            "import_url",
-            "public_builds",
-            "only_allow_merge_if_pipeline_succeeds",
-            "only_allow_merge_if_all_discussions_are_resolved",
-            "merge_method",
+            "allow_merge_on_skipped_pipeline",
+            "analytics_access_level",
+            "approvals_before_merge",
+            "auto_cancel_pending_pipelines",
+            "auto_devops_deploy_strategy",
+            "auto_devops_enabled",
             "autoclose_referenced_issues",
-            "suggestion_commit_message",
-            "remove_source_branch_after_merge",
-            "lfs_enabled",
-            "request_access_enabled",
-            "tag_list",
             "avatar",
+            "build_coverage_regex",
             "build_git_strategy",
             "build_timeout",
-            "auto_cancel_pending_pipelines",
-            "build_coverage_regex",
+            "builds_access_level",
             "ci_config_path",
             "ci_default_git_depth",
-            "auto_devops_enabled",
-            "auto_devops_deploy_strategy",
-            "repository_storage",
-            "approvals_before_merge",
+            "ci_forward_deployment_enabled",
+            "container_expiration_policy_attributes",
+            "container_registry_enabled",
+            "default_branch",
+            "description",
+            "emails_disabled",
             "external_authorization_classification_label",
-            "mirror",
-            "mirror_user_id",
-            "mirror_trigger_builds",
-            "only_mirror_protected_branches",
+            "forking_access_level",
+            "import_url",
+            "issues_access_level",
+            "issues_enabled",
+            "jobs_enabled",
+            "lfs_enabled",
+            "merge_method",
+            "merge_requests_access_level",
+            "merge_requests_enabled",
             "mirror_overwrites_diverged_branches",
+            "mirror_trigger_builds",
+            "mirror_user_id",
+            "mirror",
+            "name",
+            "operations_access_level",
+            "only_allow_merge_if_all_discussions_are_resolved",
+            "only_allow_merge_if_pipeline_succeeds",
+            "only_mirror_protected_branches",
             "packages_enabled",
+            "pages_access_level",
+            "requirements_access_level",
+            "restrict_user_defined_variables",
+            "path",
+            "public_builds",
+            "remove_source_branch_after_merge",
+            "repository_access_level",
+            "repository_storage",
+            "request_access_enabled",
+            "resolve_outdated_diff_discussions",
             "service_desk_enabled",
+            "shared_runners_enabled",
+            "show_default_award_emojis",
+            "snippets_access_level",
+            "snippets_enabled",
+            "suggestion_commit_message",
+            "tag_list",
+            "visibility",
+            "wiki_access_level",
+            "wiki_enabled",
+            "issues_template",
+            "merge_requests_template",
         ),
     )
     _list_filters = (

@@ -6,17 +6,21 @@ repos:
     rev: 20.8b1
     hooks:
       - id: black
-
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v4.1.0
+    rev: v5.0.0
     hooks:
       - id: commitlint
         additional_dependencies: ['@commitlint/config-conventional']
         stages: [commit-msg]
-
-  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v4.1.0
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
     hooks:
-      - id: commitlint-travis
-        additional_dependencies: ['@commitlint/config-conventional']
-        stages: [manual]
+      - id: flake8
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0
+    hooks:
+      - id: isort
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.812
+    hooks:
+      - id: mypy
